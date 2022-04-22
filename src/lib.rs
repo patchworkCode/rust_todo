@@ -28,6 +28,22 @@ pub fn create_item(conn: &Connection, item: Item) -> Result<()> {
     Ok(())
 }
 
+pub fn begin_connection() -> Result<Connection> { 
+    let conn = Connection::open("todo.db")?;
+    conn.execute(
+        "
+            CREATE TABLE IF NOT EXISTS todo (
+                id INTEGER PRIMARY KEY,
+                body TEXT NOT NULL UNIQUE,
+                complete INTEGER NOT NULL
+             )
+        ",
+        [],
+    )?;
+
+   Ok(conn) 
+}
+
 pub fn retrieve_item(conn: &Connection) {
     todo!()
 }

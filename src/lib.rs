@@ -41,7 +41,7 @@ pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
         let complete: i8 = row.get(2)?;
         match complete {
             0 => return Ok(Item::new(content, false)),
-            _ => return Ok(Item::new(content, true)),
+            _ => return Ok(Item::new(content, true)), //needs to be improved upon
         }
     })?;
 

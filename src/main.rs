@@ -7,9 +7,8 @@ use std::path::Path;
 use todo::{create_item,retrieve_list, Item};
 use rusqlite::{params, Connection, Result};
 
-const CHECK: char = '';
-const CROSS: char = '⨯';
-
+const COMPLETE: char = '';
+const INCOMPLETE: char = '';
 
 fn main() -> Result<()> {
     let conn = Connection::open("todo.db")?;
@@ -31,8 +30,8 @@ fn main() -> Result<()> {
     
     for item in todo {
         match item.complete {
-            true => println!("{}: {}", CHECK, item.content),
-            _ => println!("{}: {}", CROSS, item.content)
+            true => println!("{} {}", COMPLETE, item.content),
+            _ => println!("{} {}", INCOMPLETE, item.content)
         }
     }
 

@@ -26,12 +26,12 @@ fn main() -> Result<()> {
     //let test_item = Item::new(String::from("second item"));
     //create_item(&conn, test_item)
 
-    let todo = retrieve_list(&conn).unwrap();
+    let todo = retrieve_list(&conn)?;
     
     for item in todo {
         match item.complete {
             true => println!("{} {}", COMPLETE, item.content),
-            _ => println!("{} {}", INCOMPLETE, item.content)
+            false => println!("{} {}", INCOMPLETE, item.content)
         }
     }
 

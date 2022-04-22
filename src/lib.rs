@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Error, Connection, Result};
 
 #[derive()]
 pub struct Item {
@@ -40,13 +40,17 @@ pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
         let content = row.get(1)?;
         let complete: i8 = row.get(2)?;
         match complete {
-            0 => return Ok(Item::new(content, false)),
-            _ => return Ok(Item::new(content, true)), //needs to be improved upon
+            0 => Ok(Item::new(content, false)),
+            1 => Ok(Item::new(content, true)),
+            _ => Err(rusqlite::Error::InvalidQuery)//needs to be improved upon
         }
     })?;
 
     for item in todo_iter {
-        all_items.push(item.unwrap());
+        match item {
+            Ok(item) =>  all_items.push(item),
+            Err(e) => return Err(e),
+        }
     }
 
     Ok(all_items)

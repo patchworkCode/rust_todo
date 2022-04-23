@@ -8,6 +8,7 @@ use std::prelude::rust_2015;
 pub enum AddCliError {
     Io(io::Error),
     Insert(rusqlite::Error),
+    NullItem,
 }
 
 #[derive(Debug)]
@@ -29,15 +30,6 @@ impl Item {
     }
 }
 
-pub fn create_item(conn: &Connection, item: Item) -> Result<()> {
-
-    conn.execute("INSERT INTO todo (body, complete) VALUES (?1, ?2)",
-                params![item.content, 0]
-    )?;
-
-    Ok(())
-}
-
 pub fn begin_connection() -> Result<Connection> { 
     let conn = Connection::open("todo.db")?;
     conn.execute(
@@ -54,8 +46,38 @@ pub fn begin_connection() -> Result<Connection> {
    Ok(conn) 
 }
 
-pub fn retrieve_item(conn: &Connection) {
-    todo!()
+pub fn create_item(conn: &Connection, item: Item) -> Result<()> {
+
+    conn.execute("INSERT INTO todo (body, complete) VALUES (?1, ?2)",
+                params![item.content, 0]
+    )?;
+
+    Ok(())
+}
+
+pub fn retrieve_item(conn: &Connection, index: i8) -> Result<Item, rusqlite::Error> {
+    let item = conn.query_row(
+        "SELECT item FROM todo WHERE id=?",
+        [index.to_string()],
+        |row| {
+            let content = row.get(1)?;
+            let complete: i8 = row.get(2)?;
+            match complete {
+                0 => Ok(Item::new(content, false)),
+                1 => Ok(Item::new(content, true)),
+                _ => Err(rusqlite::Error::InvalidQuery)
+            }
+        })?;
+    Ok(item)
+
+}
+
+pub fn delete_item(conn: &Connection, index: i8) -> Result<String> {
+    conn.execute(
+        "DELETE FROM todo WHERE id in (SELECT id FROM todo LIMIT 1 OFFSET ?)",
+        [index - 1])?;
+    Ok("Item successfully deleted".to_string())
+
 }
 
 pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
@@ -87,39 +109,19 @@ pub fn process_add(conn: &Connection) -> Result<(), AddCliError> {
     let mut reader = stdin.lock();
     let mut content = String::new();
     match reader.read_line(&mut content) {
-        Ok(_) => {
-            let item = Item::new(content.trim().to_string(), false);
-            match create_item(conn, item) {
-                Ok(_) => Ok(()),
-                Err(error) => Err(AddCliError::Insert(error))
+        Ok(n) => {
+            match n {
+                1 => Err(AddCliError::NullItem),
+                _ => {
+                    let item = Item::new(content.trim().to_string(), false);
+                    match create_item(conn, item) {
+                        Ok(_) => Ok(()),
+                        Err(error) => Err(AddCliError::Insert(error))
+                    }
+                }
             }
         }
         Err(error) => Err(AddCliError::Io(error)),
     }
 }
-
-
-//pub struct Todo {
-//    list: Vec<Item>
-//}
-//
-//impl Todo {
-//    fn new(list: Vec<Item>) -> Self {
-//        Self{
-//            list
-//        }
-//    }
-//    
-//    fn add(&mut self, item: Item)  {
-//        self.list.push(item);
-//    }
-//
-//    fn delete(&mut self, index: usize) {
-//        self.list.remove(index);
-//    }
-//
-//    fn complete(&mut self, index: usize) {
-//        self.list[index].complete();
-//    }
-//}
 

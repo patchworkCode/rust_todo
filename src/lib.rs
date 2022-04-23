@@ -1,6 +1,16 @@
-use rusqlite::{params, Error, Connection, Result};
+use rusqlite::{params, Connection, Result};
+use std::io::BufReader;
+use std::io;
+use std::io::prelude::*;
+use std::prelude::rust_2015;
 
-#[derive()]
+#[derive(Debug)]
+pub enum AddCliError {
+    Io(io::Error),
+    Insert(rusqlite::Error),
+}
+
+#[derive(Debug)]
 pub struct Item {
     pub content: String,
     pub complete: bool
@@ -70,6 +80,22 @@ pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
     }
 
     Ok(all_items)
+}
+
+pub fn process_add(conn: &Connection) -> Result<(), AddCliError> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock();
+    let mut content = String::new();
+    match reader.read_line(&mut content) {
+        Ok(_) => {
+            let item = Item::new(content.trim().to_string(), false);
+            match create_item(conn, item) {
+                Ok(_) => Ok(()),
+                Err(error) => Err(AddCliError::Insert(error))
+            }
+        }
+        Err(error) => Err(AddCliError::Io(error)),
+    }
 }
 
 

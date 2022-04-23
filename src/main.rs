@@ -4,30 +4,32 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
-use todo::{create_item, begin_connection, retrieve_list, Item};
-use rusqlite::{params, Connection};
+use todo::{create_item, begin_connection, process_add, retrieve_list, Item};
+use rusqlite::{params, Connection, Result};
 
 const COMPLETE: char = '';
 const INCOMPLETE: char = '';
 
-fn main() -> Result<(), String> {
+fn main() -> Result<()> {
     let args = Command::new("rust-todo")
-    .arg(arg!(-a --add <item> "list item to be added"))
+    .arg(arg!(-a --add "list item to be added"))
     .arg(arg!(-l --list "lists items in the the todo list"))
+    .arg(arg!(-d --delete <index> "remove a todo item"))
+    .arg(arg!(-c --complete <index> "complete a list item"))
     .group(ArgGroup::new("CRUD")
-        .args(&["add", "list"])
+        .args(&["add", "list", "delete", "complete"])
         .required(true))
     .get_matches();
 
 
-    let conn = begin_connection().unwrap(); 
-    //let test_item = Item::new(String::from("second item"));
-    //create_item(&conn, test_item)
-    //let stdin = io::stdin();
-    //let reader = stdin.lock();
+    let conn = begin_connection()?;
+    
+    match process_add(&conn) {
+        Ok(_) => println!("Item succesfully added"),
+        Err(error) => println!("There was an erro {:#?}", error)
+    }
 
-
-    let todo = retrieve_list(&conn).unwrap();
+    let todo = retrieve_list(&conn)?;
     
     for item in todo {
         match item.complete {

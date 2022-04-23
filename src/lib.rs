@@ -1,8 +1,6 @@
 use rusqlite::{params, Connection, Result};
-use std::io::BufReader;
 use std::io;
 use std::io::prelude::*;
-use std::prelude::rust_2015;
 
 #[derive(Debug)]
 pub enum AddCliError {
@@ -14,23 +12,20 @@ pub enum AddCliError {
 #[derive(Debug)]
 pub struct Item {
     pub content: String,
-    pub complete: bool
+    pub complete: bool,
 }
 
 impl Item {
-    pub fn new(content: String, complete: bool) -> Self{
-        Self{
-            content,
-            complete,
-        }
+    pub fn new(content: String, complete: bool) -> Self {
+        Self { content, complete }
     }
 
-    fn complete(&mut self) {
-        self.complete = true;
-    }
+//    fn complete(&mut self) {
+//        self.complete = true;
+//    }
 }
 
-pub fn begin_connection() -> Result<Connection> { 
+pub fn begin_connection() -> Result<Connection> {
     let conn = Connection::open("todo.db")?;
     conn.execute(
         "
@@ -43,13 +38,13 @@ pub fn begin_connection() -> Result<Connection> {
         [],
     )?;
 
-   Ok(conn) 
+    Ok(conn)
 }
 
 pub fn create_item(conn: &Connection, item: Item) -> Result<()> {
-
-    conn.execute("INSERT INTO todo (body, complete) VALUES (?1, ?2)",
-                params![item.content, 0]
+    conn.execute(
+        "INSERT INTO todo (body, complete) VALUES (?1, ?2)",
+        params![item.content, 0],
     )?;
 
     Ok(())
@@ -65,19 +60,35 @@ pub fn retrieve_item(conn: &Connection, index: i8) -> Result<Item, rusqlite::Err
             match complete {
                 0 => Ok(Item::new(content, false)),
                 1 => Ok(Item::new(content, true)),
-                _ => Err(rusqlite::Error::InvalidQuery)
+                _ => Err(rusqlite::Error::InvalidQuery),
             }
-        })?;
+        },
+    )?;
     Ok(item)
+}
 
+pub fn does_exist_item(conn: &Connection, index: i8) -> Result<i8> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT * FROM todo LIMIT 1 OFFSET ?)",
+        [index - 1],
+        |row| {
+            let eval: i8 = row.get(0)?;
+            return Ok(eval);
+        },
+    )
 }
 
 pub fn delete_item(conn: &Connection, index: i8) -> Result<String> {
-    conn.execute(
-        "DELETE FROM todo WHERE id in (SELECT id FROM todo LIMIT 1 OFFSET ?)",
-        [index - 1])?;
-    Ok("Item successfully deleted".to_string())
-
+    match does_exist_item(conn, index)? {
+        1 => {
+            conn.execute(
+                "DELETE FROM todo WHERE id in (SELECT id FROM todo LIMIT 1 OFFSET ?)",
+                [index - 1],
+            )?;
+            Ok("Item successfully deleted.".to_string())
+        }
+        _ => Ok("Item does not exist.".to_string()),
+    }
 }
 
 pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
@@ -90,13 +101,13 @@ pub fn retrieve_list(conn: &Connection) -> Result<Vec<Item>> {
         match complete {
             0 => Ok(Item::new(content, false)),
             1 => Ok(Item::new(content, true)),
-            _ => Err(rusqlite::Error::InvalidQuery)//needs to be improved upon
+            _ => Err(rusqlite::Error::InvalidQuery), //needs to be improved upon
         }
     })?;
 
     for item in todo_iter {
         match item {
-            Ok(item) =>  all_items.push(item),
+            Ok(item) => all_items.push(item),
             Err(e) => return Err(e),
         }
     }
@@ -109,19 +120,16 @@ pub fn process_add(conn: &Connection) -> Result<(), AddCliError> {
     let mut reader = stdin.lock();
     let mut content = String::new();
     match reader.read_line(&mut content) {
-        Ok(n) => {
-            match n {
-                1 => Err(AddCliError::NullItem),
-                _ => {
-                    let item = Item::new(content.trim().to_string(), false);
-                    match create_item(conn, item) {
-                        Ok(_) => Ok(()),
-                        Err(error) => Err(AddCliError::Insert(error))
-                    }
+        Ok(n) => match n {
+            1 => Err(AddCliError::NullItem),
+            _ => {
+                let item = Item::new(content.trim().to_string(), false);
+                match create_item(conn, item) {
+                    Ok(_) => Ok(()),
+                    Err(error) => Err(AddCliError::Insert(error)),
                 }
             }
-        }
+        },
         Err(error) => Err(AddCliError::Io(error)),
     }
 }
-

@@ -21,20 +21,22 @@ fn main() -> Result<()> {
         .required(true))
     .get_matches();
 
-
     let conn = begin_connection()?;
-    
-    match process_add(&conn) {
-        Ok(_) => println!("Item succesfully added"),
-        Err(error) => println!("There was an erro {:#?}", error)
-    }
 
-    let todo = retrieve_list(&conn)?;
-    
-    for item in todo {
-        match item.complete {
-            true => println!("{} {}", COMPLETE, item.content),
-            false => println!("{} {}", INCOMPLETE, item.content)
+    if args.is_present("add"){    
+        match process_add(&conn) {
+            Ok(_) => println!("Item succesfully added"),
+            Err(error) => println!("There was an erro {:#?}", error)
+        }
+    }
+    else if args.is_present("list"){
+        let todo = retrieve_list(&conn)?;
+        
+        for item in todo {
+            match item.complete {
+                true => println!("{} {}", COMPLETE, item.content),
+                false => println!("{} {}", INCOMPLETE, item.content)
+            }
         }
     }
 

@@ -40,8 +40,12 @@ fn main() -> Result<()> {
         }
     } else if args.is_present("delete") {
         let index: i8 = args.value_of("delete").unwrap().parse().unwrap();
-        let deleted_item = delete_item(&conn, index)?;
-        println!("{}", deleted_item)
+        let result = delete_item(&conn, index)?;
+        println!("{}", result)
+    } else if args.is_present("complete") {
+        let index: i8 = args.value_of("complete").unwrap().parse().unwrap();
+        let result = complete_item(&conn, index)?;
+        println!("{}", result)
     }
 
     Ok(())

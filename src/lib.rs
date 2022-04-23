@@ -19,10 +19,6 @@ impl Item {
     pub fn new(content: String, complete: bool) -> Self {
         Self { content, complete }
     }
-
-//    fn complete(&mut self) {
-//        self.complete = true;
-//    }
 }
 
 pub fn begin_connection() -> Result<Connection> {
@@ -86,6 +82,19 @@ pub fn delete_item(conn: &Connection, index: i8) -> Result<String> {
                 [index - 1],
             )?;
             Ok("Item successfully deleted.".to_string())
+        }
+        _ => Ok("Item does not exist.".to_string()),
+    }
+}
+
+pub fn complete_item(conn: &Connection, index: i8) -> Result<String> {
+    match does_exist_item(conn, index)? {
+        1 => {
+            conn.execute(
+                "UPDATE todo SET complete = 1 WHERE id in (SELECT id FROM todo LIMIT 1 OFFSET ?)",
+                [index - 1],
+            )?;
+            Ok("Item successfully completed.".to_string())
         }
         _ => Ok("Item does not exist.".to_string()),
     }

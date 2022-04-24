@@ -7,10 +7,10 @@ const INCOMPLETE: char = '';
 
 fn main() -> Result<()> {
     let args = Command::new("rust-todo")
-        .arg(arg!(-a --add "list item to be added"))
-        .arg(arg!(-l --list "lists items in the the todo list"))
-        .arg(arg!(-d --delete <index> "remove a todo item"))
-        .arg(arg!(-c --complete <index> "complete a list item"))
+        .arg(arg!(-a --add "Todo list item to be added"))
+        .arg(arg!(-l --list "Lists items in the the todo list"))
+        .arg(arg!(-d --delete <number> "Remove a todo list item"))
+        .arg(arg!(-c --complete <number> "Complete a todo list item"))
         .group(
             ArgGroup::new("CRUD")
                 .args(&["add", "list", "delete", "complete"])
@@ -23,7 +23,7 @@ fn main() -> Result<()> {
     if args.is_present("add") {
         match process_add(&conn) {
             Ok(_) => println!("Item succesfully added."),
-            Err(error) => println!("There was an error: {:#?}", error),
+            Err(error) => println!("Item could not be added: {:#?}", error),
         }
     } else if args.is_present("list") {
         let todo = retrieve_list(&conn)?;
